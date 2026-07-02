@@ -1,0 +1,429 @@
+================================================================================
+  MICRO-CITY TRAFFIC ROUTING SIMULATION
+  Floyd-Warshall Implementation — Project Documentation
+================================================================================
+  Project Title : Micro-City Traffic Routing Simulation
+  Algorithm     : Floyd-Warshall (All-Pairs Shortest Path)
+  Paradigm      : Dynamic Programming (DP)
+  City Map      : Makati CBD, Metro Manila (7 connected + 1 isolated node)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+  1. OVERVIEW OF SOLUTION
+--------------------------------------------------------------------------------
+
+This project addresses the real-world problem of urban traffic congestion and
+delivery route optimization in a local neighbourhood grid. The goal is to
+calculate the most efficient travel path through a simplified city map — a
+connected weighted graph representing the major intersections of the Makati
+Central Business District (CBD) in Metro Manila, Philippines.
+
+The map consists of 7 active intersections (nodes) connected by roads (edges),
+where each edge carries a numerical weight representing the estimated travel
+time in minutes. An additional 8th node — Isolated_Node — is included with
+no connecting roads to test graceful handling of disconnected graph components.
+
+The solution implements the Floyd-Warshall algorithm, a Dynamic Programming
+approach that computes the shortest travel times between ALL pairs of nodes in
+a single O(V³) pass. After one algorithm run, any routing query can be answered
+in O(1) time using the pre-computed distance and path-reconstruction tables.
+
+The program provides an interactive command-line interface where a user can:
+  - Enter any FROM and TO intersection to find the optimal route
+  - Type "test" to run all pre-defined test cases and edge cases
+  - Type "quit" to exit the simulation
+
+Output for each query includes:
+  - The optimal sequence of intersections to travel through
+  - The total travel time in minutes
+  - Execution time of the algorithm in milliseconds
+
+The node map used:
+  EDSA_Ayala      ─── 4 min ──► Ayala_Paseo
+  EDSA_Ayala      ─── 6 min ──► EDSA_Buendia
+  Ayala_Paseo     ─── 3 min ──► Ayala_Makati
+  Ayala_Paseo     ─── 5 min ──► Buendia_Paseo
+  Ayala_Makati    ─── 4 min ──► Buendia_Makati
+  Buendia_Makati  ─── 3 min ──► Buendia_Paseo
+  Buendia_Makati  ─── 5 min ──► EDSA_Buendia
+  Buendia_Makati  ─── 3 min ──► Makati_Kalayaan
+  Buendia_Paseo   ─── 4 min ──► EDSA_Buendia
+  Isolated_Node   ─── (no connecting roads)
+
+
+--------------------------------------------------------------------------------
+  2. DESIGN TECHNIQUE WITH JUSTIFICATION — DYNAMIC PROGRAMMING
+--------------------------------------------------------------------------------
+
+The Floyd-Warshall algorithm is a classic example of Dynamic Programming (DP).
+
+WHAT IS DYNAMIC PROGRAMMING?
+  Dynamic Programming is a technique for solving complex problems by breaking
+  them into simpler overlapping sub-problems, solving each sub-problem only
+  once, and storing (memoizing) the results for reuse. This avoids redundant
+  recomputation and guarantees an optimal solution through the principle of
+  optimal substructure.
+
+WHY FLOYD-WARSHALL IS DP:
+
+  1. Sub-problem definition:
+       Let dist[i][j][k] = the shortest path from node i to node j using only
+       nodes {0, 1, ..., k} as allowed intermediate stops.
+
+  2. Recurrence relation (the DP update rule):
+       dist[i][j][k] = min(
+           dist[i][j][k-1],             ← skip node k as intermediate
+           dist[i][k][k-1] + dist[k][j][k-1]   ← go through k
+       )
+       In practice, we use a 2D array and update in-place because each new
+       value of k only reads from the already-computed state.
+
+  3. Optimal substructure:
+       If the shortest path from i to j passes through intermediate node k,
+       then the segment i→k must itself be a shortest path, and the segment
+       k→j must also be a shortest path. This property allows us to build
+       global optimal solutions from locally optimal sub-solutions.
+
+  4. Overlapping sub-problems:
+       Many (i, j) pairs share the same intermediate nodes. Instead of
+       recomputing from scratch per query (as a brute-force would), the DP
+       table stores and reuses each sub-result.
+
+WHY DP OVER GREEDY (DIJKSTRA) FOR THIS PROJECT?
+  - Dijkstra's algorithm is greedy and single-source: it must be re-run
+    from scratch for every new starting point, costing O((V+E) log V) per run.
+  - Floyd-Warshall computes ALL pairs in one pass at O(V³) total.
+  - For a small dense graph (V < 10) with multiple routing queries, DP is
+    the superior and more theoretically interesting choice.
+  - DP guarantees global optimality through exhaustive sub-problem coverage,
+    whereas greedy algorithms only guarantee local optimality at each step.
+
+
+--------------------------------------------------------------------------------
+  3. ALGORITHM EXPLANATION — BRIEF STEP BY STEP
+--------------------------------------------------------------------------------
+
+Floyd-Warshall operates in two main phases:
+
+  PHASE 1 — INITIALISATION
+  ─────────────────────────
+  Step 1: Collect all V nodes into a list.
+
+  Step 2: Create a V×V distance matrix (dist) filled with infinity (∞).
+          This represents "no known path exists yet" between any pair.
+
+  Step 3: Set dist[v][v] = 0 for all nodes v.
+          The cost to travel from a node to itself is always zero.
+
+  Step 4: For every direct road (u → v) with weight w in the graph,
+          set dist[u][v] = w.
+          This seeds the matrix with known direct-connection travel times.
+
+  Step 5: Create a parallel V×V table (next_node) for path reconstruction.
+          Set next_node[u][v] = v for every direct edge, meaning:
+          "The first step from u toward v is v itself."
+
+  PHASE 2 — DYNAMIC PROGRAMMING TRIPLE LOOP
+  ───────────────────────────────────────────
+  Step 6: Iterate over every node k as a potential intermediate stop.
+    Step 7: For each source node i:
+      Step 8: For each destination node j:
+
+              If dist[i][k] + dist[k][j] < dist[i][j]:
+                  → A shorter route via k has been found!
+                  → Update dist[i][j] to the new shorter value.
+                  → Update next_node[i][j] = next_node[i][k]
+                     (i.e., the first hop from i toward j is now the
+                      same first hop from i toward k.)
+
+  After all V iterations of k, dist[i][j] holds the globally optimal
+  (shortest) travel time between every pair of nodes.
+
+  PHASE 3 — PATH RECONSTRUCTION (on demand, O(V) per query)
+  ───────────────────────────────────────────────────────────
+  Step 9: To recover the actual route from start to end:
+          - Begin at 'start', add to path list.
+          - Repeatedly follow next_node[current][end] until current == end.
+          - Each step adds one intersection to the path list.
+          - The final list is the optimal sequence of intersections.
+
+
+--------------------------------------------------------------------------------
+  4. PSEUDOCODE
+--------------------------------------------------------------------------------
+
+  function FloydWarshall(Graph):
+
+      // ── Phase 1: Initialisation ──────────────────────────────────────────
+      Let V  = list of all nodes in Graph
+      Let dist      = 2D array [V][V] filled with Infinity
+      Let next_node = 2D array [V][V] filled with Null
+
+      For each node v in V:
+          dist[v][v] = 0                  // zero cost to stay in place
+
+      For each node u in Graph:
+          For each neighbour v with edge weight w:
+              dist[u][v]      = w         // seed with direct road costs
+              next_node[u][v] = v         // first step is the neighbour itself
+
+      // ── Phase 2: Dynamic Programming Triple Loop ─────────────────────────
+      For each intermediate node k in V:          // try every relay node
+          For each source node i in V:            // try every start
+              For each destination node j in V:   // try every end
+
+                  If dist[i][k] + dist[k][j] < dist[i][j]:
+                      dist[i][j]      = dist[i][k] + dist[k][j]
+                      next_node[i][j] = next_node[i][k]
+
+      return dist, next_node
+
+
+  function ReconstructPath(next_node, start, end):
+
+      If next_node[start][end] is Null:
+          return "No path found"          // disconnected nodes
+
+      path    = [start]
+      current = start
+
+      While current != end:
+          current = next_node[current][end]
+          path.append(current)
+
+      return path
+
+
+--------------------------------------------------------------------------------
+  5. TOOLS USED
+--------------------------------------------------------------------------------
+
+  Language    : Python 3.x
+                Chosen for its readability, built-in data structures
+                (dict, list), and standard library support (time, math).
+
+  Editor      : Visual Studio Code (VS Code)
+                Used for writing, syntax highlighting, and running the
+                Python script via the integrated terminal.
+
+  Libraries   : time  (standard library)
+                  → time.perf_counter() provides high-resolution timing
+                    to measure algorithm execution in milliseconds.
+                math  (standard library)
+                  → math.inf provides a clean representation of infinity
+                    for initialising the distance matrix.
+
+  Data        : Custom adjacency dictionary representing the Makati CBD
+  Structure     road network, manually modelled from the provided city map.
+
+  Version     : No external packages or pip installs required.
+  Control       The project runs with a standard Python 3 installation.
+
+  Testing     : Manual input testing via command-line interactive loop.
+                Edge cases verified by intentional isolation of a node
+                and by routing from/to the same intersection.
+
+
+--------------------------------------------------------------------------------
+  6. CODE EXAMPLE — MOST IMPORTANT SLICE
+--------------------------------------------------------------------------------
+
+  The most critical section of the implementation is the Dynamic Programming
+  triple loop inside floyd_warshall(). This is where all shortest paths are
+  computed by iteratively considering each node as a potential intermediate.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  # Outer loop: k = the intermediate "relay" node being considered       │
+  │  for k in nodes:                                                         │
+  │      for i in nodes:      # i = source node                             │
+  │          for j in nodes:  # j = destination node                        │
+  │                                                                          │
+  │              # Skip if either leg of the detour is unreachable           │
+  │              if dist[i][k] == math.inf or dist[k][j] == math.inf:       │
+  │                  continue                                                │
+  │                                                                          │
+  │              # Relaxation: is going through k faster?                   │
+  │              path_through_k = dist[i][k] + dist[k][j]                  │
+  │                                                                          │
+  │              if path_through_k < dist[i][j]:                            │
+  │                  dist[i][j]      = path_through_k  # update cost        │
+  │                  next_node[i][j] = next_node[i][k] # update pointer     │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  WHY THIS SLICE IS THE CORE:
+  - The three nested loops give the algorithm its O(V³) time complexity.
+  - The relaxation condition (dist[i][k] + dist[k][j] < dist[i][j]) is the
+    DP recurrence — it decides whether routing through k improves the path.
+  - Updating next_node[i][j] = next_node[i][k] is how the algorithm records
+    WHICH path was chosen without storing the full route at every step,
+    keeping space at O(V²) rather than O(V³).
+
+  The second most important slice is path reconstruction:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  def reconstruct_fw_path(next_node, start, end):                        │
+  │      if next_node[start][end] is None:                                  │
+  │          return None       # no connection exists                       │
+  │                                                                          │
+  │      path    = [start]                                                   │
+  │      current = start                                                     │
+  │                                                                          │
+  │      while current != end:                                               │
+  │          current = next_node[current][end]  # follow the pointer chain  │
+  │          path.append(current)                                            │
+  │                                                                          │
+  │      return path                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+--------------------------------------------------------------------------------
+  7. TESTING AND RESULTS
+--------------------------------------------------------------------------------
+
+  All routes were computed using the Floyd-Warshall algorithm.
+  Results were cross-validated against Dijkstra's (Member 2) — all match.
+  Execution time measured with time.perf_counter() in milliseconds.
+
+  7.1 Standard Route Test Cases
+  ─────────────────────────────────────────────────────────────────────────────
+  Test  Input (From → To)                 Expected Output      Actual Output   Result
+  ─────────────────────────────────────────────────────────────────────────────
+  TC1   EDSA_Ayala → Makati_Kalayaan      14 min               14 min          PASS
+        Expected path:
+        EDSA_Ayala → Ayala_Paseo → Ayala_Makati → Buendia_Makati → Makati_Kalayaan
+        Actual path:
+        EDSA_Ayala → Ayala_Paseo → Ayala_Makati → Buendia_Makati → Makati_Kalayaan
+
+  TC2   EDSA_Buendia → Ayala_Makati       9 min                9 min           PASS
+        Expected path:
+        EDSA_Buendia → Buendia_Makati → Ayala_Makati
+        Actual path:
+        EDSA_Buendia → Buendia_Makati → Ayala_Makati
+
+  TC3   Ayala_Paseo → Buendia_Makati      7 min                7 min           PASS
+        Expected path:
+        Ayala_Paseo → Ayala_Makati → Buendia_Makati
+        Actual path:
+        Ayala_Paseo → Ayala_Makati → Buendia_Makati
+
+  TC4   EDSA_Ayala → Buendia_Makati       11 min               11 min          PASS
+        Expected path:
+        EDSA_Ayala → Ayala_Paseo → Ayala_Makati → Buendia_Makati
+        Actual path:
+        EDSA_Ayala → Ayala_Paseo → Ayala_Makati → Buendia_Makati
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+  7.2 Edge Case Test Cases
+  ─────────────────────────────────────────────────────────────────────────────
+  Test  Input (From → To)                 Expected Output      Actual Output   Result
+  ─────────────────────────────────────────────────────────────────────────────
+  EC1   Ayala_Paseo → Ayala_Paseo         0 min, same node     0 min           PASS
+        (Start == End edge case)           no movement needed   [Ayala_Paseo]
+        No crash, correct zero-cost result.
+
+  EC2   EDSA_Ayala → Isolated_Node        No path found        No path found   PASS
+        (Destination is disconnected)      graceful message     no crash
+        Floyd-Warshall returns math.inf;
+        program prints "No path found" without crashing.
+
+  EC3   Isolated_Node → Buendia_Makati    No path found        No path found   PASS
+        (Source is disconnected)           graceful message     no crash
+        The isolated node has no outgoing edges;
+        program handles this gracefully with a clear message.
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+  7.3 Algorithm Execution Time
+  ─────────────────────────────────────────────────────────────────────────────
+  Nodes (V)         : 8
+  Execution time    : ~0.08 – 0.10 ms  (measured with time.perf_counter())
+  Post-run queries  : O(1) — no re-computation needed after the initial run
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+  7.4 All-Pairs Shortest Distance Table (minutes)
+  ─────────────────────────────────────────────────────────────────────────────
+              EDSA_A  Ayal_P  Ayal_M  Buen_M  Buen_P  EDSA_B  Kal.    ISO
+  EDSA_A           0       4       7      11       9       6      14      ∞
+  Ayal_P           4       0       3       7       5       9      10      ∞
+  Ayal_M           7       3       0       4       7       9       7      ∞
+  Buen_M          11       7       4       0       3       5       3      ∞
+  Buen_P           9       5       7       3       0       4       6      ∞
+  EDSA_B           6       9       9       5       4       0       8      ∞
+  Kal.            14      10       7       3       6       8       0      ∞
+  ISO              ∞       ∞       ∞       ∞       ∞       ∞       ∞      0
+  ─────────────────────────────────────────────────────────────────────────────
+  The "∞" entries for Isolated_Node confirm it is unreachable to/from
+  all other nodes, validating the edge case handling.
+
+
+--------------------------------------------------------------------------------
+  8. COMPLEXITY ANALYSIS — TIME AND SPACE
+--------------------------------------------------------------------------------
+
+  Let V = number of nodes (intersections) in the graph.
+  For this project: V = 8  (7 connected + 1 isolated node)
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  TIME COMPLEXITY                                                           │
+  │  ─────────────────────────────────────────────────────────────────────── │
+  │  Phase 1 — Initialisation                                                  │
+  │    • Filling the dist and next_node tables:  O(V²)                        │
+  │    • Seeding direct edges:                   O(E)  where E = edges        │
+  │                                                                            │
+  │  Phase 2 — Triple-nested DP loop                                           │
+  │    • Three nested loops each iterating V times: O(V × V × V) = O(V³)     │
+  │    • This dominates all other steps.                                       │
+  │                                                                            │
+  │  Phase 3 — Path Reconstruction (per query)                                 │
+  │    • Following the next_node chain:          O(V) per query               │
+  │                                                                            │
+  │  OVERALL TIME COMPLEXITY:  O(V³)                                           │
+  │  For V = 8:  8³ = 512 basic operations                                    │
+  │                                                                            │
+  │  Compared to Dijkstra (greedy, single-source):                             │
+  │    • Dijkstra: O((V + E) log V) per source node                           │
+  │    • To get all pairs with Dijkstra: O(V × (V + E) log V)                 │
+  │    • For dense graphs, Floyd-Warshall is simpler and comparable.          │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  SPACE COMPLEXITY                                                          │
+  │  ─────────────────────────────────────────────────────────────────────── │
+  │  dist table      : V × V entries  →  O(V²)                               │
+  │  next_node table : V × V entries  →  O(V²)                               │
+  │  Graph storage   : O(V + E)                                               │
+  │                                                                            │
+  │  OVERALL SPACE COMPLEXITY:  O(V²)                                          │
+  │  For V = 8:  8² = 64 cells per table  (128 cells total for both tables)  │
+  │                                                                            │
+  │  Note: No recursion stack is used — the algorithm is purely iterative,   │
+  │  so there is no additional O(V) or O(E) call-stack overhead.             │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  SUMMARY TABLE
+  ─────────────────────────────────────────────────────────────────────────────
+  Metric              Floyd-Warshall (DP)        Dijkstra (Greedy)
+  ─────────────────────────────────────────────────────────────────────────────
+  Paradigm            Dynamic Programming        Greedy
+  Scope               All-Pairs Shortest Path    Single-Source Shortest Path
+  Time Complexity     O(V³)                      O((V+E) log V) per source
+  Space Complexity    O(V²)                      O(V) per run
+  Negative Weights    Supported (no neg. cycles) Not supported
+  Best Use Case       Dense graphs, multiple     Sparse graphs, one source
+                      routing queries            at a time
+  For V = 8           512 operations             ~32 operations per source
+  Actual Runtime      ~0.08 – 0.10 ms            < 0.05 ms per source
+  ─────────────────────────────────────────────────────────────────────────────
+
+  CONCLUSION:
+  Floyd-Warshall's O(V³) cost is a worthwhile trade-off for a city routing
+  system because after the one-time computation, any delivery route query
+  is answered instantly in O(1) time — making it ideal for real-time
+  interactive use cases like the simulation demonstrated in this project.
+
+================================================================================
+  END OF DOCUMENTATION
+================================================================================

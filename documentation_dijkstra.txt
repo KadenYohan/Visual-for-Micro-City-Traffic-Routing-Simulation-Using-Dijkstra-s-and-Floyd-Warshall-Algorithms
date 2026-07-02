@@ -1,0 +1,486 @@
+================================================================================
+  MICRO-CITY TRAFFIC ROUTING SIMULATION
+  Dijkstra Implementation — Project Documentation
+================================================================================
+  Project Title : Micro-City Traffic Routing Simulation
+  Algorithm     : Dijkstra's Algorithm (Single-Source Shortest Path)
+  Paradigm      : Greedy
+  City Map      : Makati CBD, Metro Manila (7 connected + 1 isolated node)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+  1. OVERVIEW OF SOLUTION
+--------------------------------------------------------------------------------
+
+This project addresses the real-world problem of urban traffic congestion and
+delivery route optimization in a local neighbourhood grid. The goal is to
+calculate the most efficient travel path through a simplified city map — a
+connected weighted graph representing the major intersections of the Makati
+Central Business District (CBD) in Metro Manila, Philippines.
+
+The map consists of 7 active intersections (nodes) connected by roads (edges),
+where each edge carries a numerical weight representing the estimated travel
+time in minutes. An additional 8th node — Isolated_Node — is included with
+no connecting roads, matching Member 3's Floyd-Warshall graph exactly so both
+algorithms can be cross-validated against the same map and the same test cases.
+
+The solution implements Dijkstra's Algorithm, a Greedy approach that computes
+the shortest travel time from ONE source node to a chosen destination by
+always expanding whichever unvisited intersection is currently cheapest to
+reach. Because road weights are always positive, the first time the
+destination is reached this way is guaranteed to be the shortest possible
+route — letting the algorithm stop early instead of mapping the whole graph.
+
+The program provides an interactive command-line interface where a user can:
+  - Enter any FROM and TO intersection to find the optimal route
+  - Type "test" to run all pre-defined test cases and edge cases (with an
+    immediate follow-up prompt afterward to try a custom route right away)
+  - Type "quit" to exit the simulation, or press Ctrl+C at any prompt —
+    both exit cleanly with a goodbye message instead of an error traceback
+
+Output for each query includes:
+  - The optimal sequence of intersections to travel through
+  - The total travel time in minutes
+  - Execution time of the algorithm in milliseconds
+
+The node map used (identical to Member 3's Floyd-Warshall map):
+  EDSA_Ayala      ─── 4 min ──► Ayala_Paseo
+  EDSA_Ayala      ─── 6 min ──► EDSA_Buendia
+  Ayala_Paseo     ─── 3 min ──► Ayala_Makati
+  Ayala_Paseo     ─── 5 min ──► Buendia_Paseo
+  Ayala_Makati    ─── 4 min ──► Buendia_Makati
+  Buendia_Makati  ─── 3 min ──► Buendia_Paseo
+  Buendia_Makati  ─── 5 min ──► EDSA_Buendia
+  Buendia_Makati  ─── 3 min ──► Makati_Kalayaan
+  Buendia_Paseo   ─── 4 min ──► EDSA_Buendia
+  Isolated_Node   ─── (no connecting roads)
+
+
+--------------------------------------------------------------------------------
+  2. DESIGN TECHNIQUE WITH JUSTIFICATION — GREEDY
+--------------------------------------------------------------------------------
+
+Dijkstra's Algorithm is a classic example of a Greedy algorithm.
+
+WHAT IS A GREEDY ALGORITHM?
+  A greedy algorithm builds a solution step by step, always making whichever
+  choice looks best at the current moment, and never revisiting that choice
+  later. This is usually faster than exploring every possibility, but it only
+  produces a correct (optimal) answer when the problem has a property that
+  guarantees local best choices add up to a global best choice.
+
+WHY DIJKSTRA IS GREEDY:
+
+  1. Local choice:
+       At every step, the algorithm picks the unvisited intersection with
+       the smallest known distance from the start — the "closest" one
+       reachable so far — and commits to it.
+
+  2. Choice is never revisited:
+       Once an intersection is popped off the priority queue and marked
+       visited, its shortest distance is treated as final. The algorithm
+       never goes back to question whether an earlier pick was wrong.
+
+  3. Why the greedy choice is safe here:
+       Because every edge weight (travel time) is positive, no future
+       detour can ever make a previously "settled" node cheaper to reach.
+       This is what makes Dijkstra's greedy strategy provably correct —
+       many greedy algorithms do NOT have this guarantee, but this one does.
+
+  4. Priority queue as the mechanism:
+       A min-heap keeps the next "best local choice" available in O(log V)
+       time, which is what makes the greedy strategy efficient to execute.
+
+WHY GREEDY (DIJKSTRA) OVER DP (FLOYD-WARSHALL) FOR THIS PROJECT?
+  - Dijkstra only computes what is needed for ONE source node, and can stop
+    the moment the destination is found — often much cheaper per query than
+    computing every possible pair in the graph.
+  - Floyd-Warshall computes ALL pairs in one O(V³) pass, which pays off only
+    if many different queries will be made against the same map afterward.
+  - For a single delivery route lookup (one start, one destination), greedy
+    Dijkstra does less wasted work than dynamic programming's exhaustive
+    all-pairs computation.
+  - The trade-off: ask about a NEW start node, and Dijkstra must be re-run
+    from scratch, while Floyd-Warshall's table already has the answer.
+
+
+--------------------------------------------------------------------------------
+  3. ALGORITHM EXPLANATION — BRIEF STEP BY STEP
+--------------------------------------------------------------------------------
+
+Dijkstra's Algorithm operates in three phases, all inside the SAME function
+call — there is deliberately no separate "reconstruct path" function. The
+team's Delegation Guide refers throughout to "the dijkstra() function"
+(singular), so the implementation keeps everything — search AND path
+rebuilding — in one function that returns (path, total_time) directly.
+
+  PHASE 0 — SHORTCUT FOR THE START == DESTINATION EDGE CASE
+  ─────────────────────────────────────────────────────────
+  Step 0: If the start and destination are the same intersection, skip the
+          search entirely and return ([start], 0) immediately.
+
+  PHASE 1 — INITIALISATION
+  ─────────────────────────
+  Step 1: Create a distance table, set every node to infinity (∞) except
+          the start node, which is set to 0 (zero cost to reach itself).
+
+  Step 2: Create an empty 'previous_nodes' table for path reconstruction.
+
+  Step 3: Create a min-heap priority queue and push (0, start) onto it.
+
+  PHASE 2 — GREEDY EXPLORATION LOOP
+  ───────────────────────────────────
+  Step 4: While the priority queue is not empty:
+
+    Step 5: Pop the (distance, node) pair with the smallest distance —
+            this is the closest unvisited intersection.
+
+    Step 6: If this node is the destination, STOP — its distance is final.
+            (This is the early-exit optimisation.)
+
+    Step 7: If this node was already visited, skip it (it's a stale
+            duplicate left over from an earlier, more expensive push).
+
+    Step 8: Mark the node as visited (its shortest distance is now locked in).
+
+    Step 9: For every neighbour of this node:
+              new_distance = distance[node] + weight(node, neighbour)
+              If new_distance < distance[neighbour]:
+                  Update distance[neighbour] = new_distance
+                  Set previous_nodes[neighbour] = node
+                  Push (new_distance, neighbour) onto the priority queue
+
+  PHASE 3 — PATH REBUILD (still inside the same function, O(V))
+  ───────────────────────────────────────────────────────────
+  Step 10: After the loop ends, check distances[destination].
+           If it is still infinity, the destination was never reached —
+           return (None, infinity) immediately.
+
+  Step 11: Otherwise, recover the actual route from start to destination:
+           - Begin at 'destination', add it to the path list.
+           - Repeatedly follow previous_nodes[current] backwards until
+             current == start.
+           - Reverse the list so it reads start → destination in order.
+
+  Step 12: Return (path, distances[destination]) — the route and its total
+           travel time, both produced by this one function call.
+
+
+--------------------------------------------------------------------------------
+  4. PSEUDOCODE
+--------------------------------------------------------------------------------
+
+  function Dijkstra(Graph, StartNode, DestinationNode):
+
+      // ── Edge case: already there ─────────────────────────────────────────
+      If StartNode == DestinationNode:
+          return [StartNode], 0
+
+      // ── Initialisation ───────────────────────────────────────────────────
+      Create a map 'distances', set all to Infinity
+      distances[StartNode] = 0
+      Create a map 'previous_nodes' to reconstruct the path
+      Create a PriorityQueue and insert (0, StartNode)
+
+      // ── Greedy Exploration Loop ──────────────────────────────────────────
+      While PriorityQueue is not empty:
+          CurrentDistance, CurrentNode = PriorityQueue.pop()
+
+          // Early exit once destination is settled
+          If CurrentNode == DestinationNode:
+              break
+
+          If CurrentNode already visited:
+              continue
+          Mark CurrentNode as visited
+
+          // Relax edges
+          For each Neighbor, Weight in Graph[CurrentNode]:
+              NewDistance = CurrentDistance + Weight
+              If NewDistance < distances[Neighbor]:
+                  distances[Neighbor] = NewDistance
+                  previous_nodes[Neighbor] = CurrentNode
+                  PriorityQueue.push((NewDistance, Neighbor))
+
+      // ── No route was ever found ──────────────────────────────────────────
+      If distances[DestinationNode] == Infinity:
+          return None, Infinity
+
+      // ── Rebuild the route by walking previous_nodes backwards ───────────
+      path    = [DestinationNode]
+      current = DestinationNode
+      While current != StartNode:
+          current = previous_nodes[current]
+          path.append(current)
+      Reverse(path)
+
+      return path, distances[DestinationNode]
+
+  // Note: there is no separate ReconstructPath function — the team's
+  // Delegation Guide calls for ONE "dijkstra() function" as the deliverable,
+  // so path rebuilding is folded directly into Dijkstra() above.
+
+
+--------------------------------------------------------------------------------
+  5. TOOLS USED
+--------------------------------------------------------------------------------
+
+  Language    : Python 3.x
+                Chosen for its readability, built-in data structures
+                (dict, list, set), and standard library support
+                (heapq, time, math).
+
+  Editor      : Visual Studio Code (VS Code)
+                Used for writing, syntax highlighting, and running the
+                Python script via the integrated terminal.
+
+  Libraries   : heapq (standard library)
+                  → provides the min-heap used as the priority queue,
+                    so the cheapest unvisited node is always O(log V)
+                    to retrieve.
+                time  (standard library)
+                  → time.perf_counter() provides high-resolution timing
+                    to measure algorithm execution in milliseconds.
+                math  (standard library)
+                  → math.inf provides a clean representation of infinity
+                    for initialising the distance table.
+
+  Data        : Custom adjacency dictionary representing the Makati CBD
+  Structure     road network — identical to Member 3's Floyd-Warshall
+                graph, manually modelled from the provided city map.
+
+  Version     : No external packages or pip installs required.
+  Control       The project runs with a standard Python 3 installation.
+
+  Testing     : Manual input testing via command-line interactive loop.
+                Edge cases verified by intentional isolation of a node,
+                by routing from/to the same intersection, by cross-
+                checking results against Member 3's Floyd-Warshall output,
+                and by interrupting the program with Ctrl+C mid-prompt to
+                confirm it exits cleanly instead of crashing with a
+                traceback.
+
+
+--------------------------------------------------------------------------------
+  6. CODE EXAMPLE — MOST IMPORTANT SLICE
+--------------------------------------------------------------------------------
+
+  The most critical section of the implementation is the main loop inside
+  dijkstra(). This is where the greedy choice is made every iteration, and
+  where the early-exit optimisation lives.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  while priority_queue:                                                   │
+  │      current_distance, current_node = heapq.heappop(priority_queue)     │
+  │                                                                          │
+  │      # Early exit: destination just got settled — it's final.          │
+  │      if current_node == destination:                                    │
+  │          break                                                           │
+  │                                                                          │
+  │      # Skip stale duplicates already settled earlier.                   │
+  │      if current_node in visited:                                        │
+  │          continue                                                        │
+  │      visited.add(current_node)                                          │
+  │                                                                          │
+  │      # Relaxation: can any neighbour be reached more cheaply now?       │
+  │      for neighbor, travel_time in graph[current_node].items():          │
+  │          new_distance = current_distance + travel_time                  │
+  │          if new_distance < distances[neighbor]:                         │
+  │              distances[neighbor] = new_distance                         │
+  │              previous_nodes[neighbor] = current_node                    │
+  │              heapq.heappush(priority_queue, (new_distance, neighbor))   │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  WHY THIS SLICE IS THE CORE:
+  - heapq.heappop always returns the cheapest unvisited node — this is the
+    "greedy choice" step that gives the algorithm its name.
+  - The early-exit check is what makes Dijkstra cheaper than computing
+    every possible destination, unlike Floyd-Warshall's exhaustive approach.
+  - The relaxation condition (new_distance < distances[neighbor]) is what
+    keeps the distance table correct as cheaper routes are discovered.
+
+  The second most important slice is the path-rebuild tail at the END of
+  the SAME dijkstra() function — not a separate function. The team's
+  Delegation Guide describes ONE "dijkstra() function" as the deliverable,
+  so reconstruction was folded in here instead of split out:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │      # Edge case (checked at the very top of dijkstra(), not shown):   │
+  │      #   if start == destination: return [start], 0                   │
+  │                                                                          │
+  │      # No route was ever found to the destination                      │
+  │      if distances[destination] == math.inf:                            │
+  │          return None, math.inf                                         │
+  │                                                                          │
+  │      # Rebuild the route by walking previous_nodes backwards           │
+  │      path    = [destination]                                            │
+  │      current = destination                                              │
+  │      while current != start:                                            │
+  │          current = previous_nodes[current]  # step backwards           │
+  │          path.append(current)                                           │
+  │      path.reverse()                                                     │
+  │                                                                          │
+  │      return path, distances[destination]                                │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+--------------------------------------------------------------------------------
+  7. TESTING AND RESULTS
+--------------------------------------------------------------------------------
+
+  All routes were computed using Dijkstra's Algorithm.
+  Results were cross-validated against Floyd-Warshall's (Member 3) — all match.
+  Execution time measured with time.perf_counter() in milliseconds.
+
+  7.1 Standard Route Test Cases
+  ─────────────────────────────────────────────────────────────────────────────
+  Test  Input (From → To)                 Expected Output      Actual Output   Result
+  ─────────────────────────────────────────────────────────────────────────────
+  TC1   EDSA_Ayala → Makati_Kalayaan      14 min               14 min          PASS
+        Expected path:
+        EDSA_Ayala → EDSA_Buendia → Buendia_Makati → Makati_Kalayaan
+        Actual path:
+        EDSA_Ayala → EDSA_Buendia → Buendia_Makati → Makati_Kalayaan
+        (Note: this ties with the alternate 14-min route via Ayala_Paseo /
+        Ayala_Makati that Floyd-Warshall reports — both are correct optima.)
+
+  TC2   EDSA_Buendia → Ayala_Makati       9 min                9 min           PASS
+        Expected path:
+        EDSA_Buendia → Buendia_Makati → Ayala_Makati
+        Actual path:
+        EDSA_Buendia → Buendia_Makati → Ayala_Makati
+
+  TC3   Ayala_Paseo → Buendia_Makati      7 min                7 min           PASS
+        Expected path:
+        Ayala_Paseo → Ayala_Makati → Buendia_Makati
+        Actual path:
+        Ayala_Paseo → Ayala_Makati → Buendia_Makati
+
+  TC4   EDSA_Ayala → Buendia_Makati       11 min               11 min          PASS
+        Expected path:
+        EDSA_Ayala → EDSA_Buendia → Buendia_Makati
+        Actual path:
+        EDSA_Ayala → EDSA_Buendia → Buendia_Makati
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+  7.2 Edge Case Test Cases
+  ─────────────────────────────────────────────────────────────────────────────
+  Test  Input (From → To)                 Expected Output      Actual Output   Result
+  ─────────────────────────────────────────────────────────────────────────────
+  EC1   Ayala_Paseo → Ayala_Paseo         0 min, same node     0 min           PASS
+        (Start == End edge case)           no movement needed   [Ayala_Paseo]
+        No crash, correct zero-cost result.
+
+  EC2   EDSA_Ayala → Isolated_Node        No path found        No path found   PASS
+        (Destination is disconnected)      graceful message     no crash
+        Dijkstra never discovers Isolated_Node during the search;
+        program prints "No path found" without crashing.
+
+  EC3   Isolated_Node → Buendia_Makati    No path found        No path found   PASS
+        (Source is disconnected)           graceful message     no crash
+        The priority queue starts and ends with only the isolated node
+        itself (it has no outgoing edges); program handles this
+        gracefully with a clear message.
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+  7.3 Algorithm Execution Time
+  ─────────────────────────────────────────────────────────────────────────────
+  Nodes (V)             : 8
+  Edges (E)              : 9
+  Execution time (TC1-4) : ~0.006 – 0.04 ms per individual run
+                           (measured with time.perf_counter(); varies run to run)
+  Note: each query above is a SEPARATE run from scratch — Dijkstra has no
+  reusable table the way Floyd-Warshall does. A new source node means a
+  new O((V+E) log V) computation.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  Note on cross-checking against Floyd-Warshall's all-pairs table: running
+  dijkstra(graph, "EDSA_Ayala", end) for each of the other 6 reachable nodes
+  reproduces the exact same row Member 3's Floyd-Warshall table shows for
+  EDSA_A (0, 4, 7, 11, 9, 6, 14, ∞) — confirming both algorithms agree.
+  Dijkstra's dijkstra() function intentionally returns only ONE (path,
+  total_time) pair per call rather than a full distance table, since the
+  Delegation Guide's deliverable is "the dijkstra() function" producing a
+  single route — not an all-pairs table, which is Floyd-Warshall's job.
+
+
+--------------------------------------------------------------------------------
+  8. COMPLEXITY ANALYSIS — TIME AND SPACE
+--------------------------------------------------------------------------------
+
+  Let V = number of nodes (intersections) and E = number of edges (roads).
+  For this project: V = 8  (7 connected + 1 isolated node),  E = 9
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  TIME COMPLEXITY                                                           │
+  │  ─────────────────────────────────────────────────────────────────────── │
+  │  Phase 1 — Initialisation                                                  │
+  │    • Filling the distances table:            O(V)                        │
+  │                                                                            │
+  │  Phase 2 — Greedy exploration loop                                         │
+  │    • Each node is popped from the heap at most once: O(V log V)          │
+  │    • Each edge can trigger one heap push:    O(E log V)                  │
+  │    • Combined:                               O((V + E) log V)            │
+  │    • This dominates all other steps.                                       │
+  │                                                                            │
+  │  Phase 3 — Path Reconstruction (per query)                                 │
+  │    • Following the previous_nodes chain:     O(V) per query               │
+  │                                                                            │
+  │  OVERALL TIME COMPLEXITY:  O((V + E) log V)                               │
+  │  For V = 8, E = 9:  (8 + 9) × log2(8) = 17 × 3 ≈ 51 basic operations      │
+  │                                                                            │
+  │  Compared to Floyd-Warshall (DP, all-pairs):                               │
+  │    • Floyd-Warshall: O(V³) for ALL pairs in one pass                      │
+  │    • Dijkstra: O((V+E) log V) per single source                           │
+  │    • For one-off queries, Dijkstra does less total work; for many         │
+  │      repeated queries on the same map, Floyd-Warshall's one-time          │
+  │      O(V³) cost amortises better.                                         │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  SPACE COMPLEXITY                                                          │
+  │  ─────────────────────────────────────────────────────────────────────── │
+  │  distances table       : V entries          →  O(V)                      │
+  │  previous_nodes table  : up to V entries     →  O(V)                      │
+  │  priority queue        : up to E entries     →  O(E)                      │
+  │  Graph storage         : O(V + E)                                         │
+  │                                                                            │
+  │  OVERALL SPACE COMPLEXITY:  O(V + E)                                       │
+  │  For V = 8, E = 9:  17 cells, versus Floyd-Warshall's 128 (two V² tables) │
+  │                                                                            │
+  │  Note: No recursion stack is used — the algorithm is purely iterative,   │
+  │  so there is no additional O(V) or O(E) call-stack overhead.             │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  SUMMARY TABLE
+  ─────────────────────────────────────────────────────────────────────────────
+  Metric              Dijkstra (Greedy)          Floyd-Warshall (DP)
+  ─────────────────────────────────────────────────────────────────────────────
+  Paradigm            Greedy                     Dynamic Programming
+  Scope               Single-Source Shortest Path All-Pairs Shortest Path
+  Time Complexity     O((V+E) log V) per source   O(V³)
+  Space Complexity    O(V+E) per run               O(V²)
+  Negative Weights    Not supported                Supported (no neg. cycles)
+  Best Use Case       Sparse graphs, one source    Dense graphs, multiple
+                      at a time                    routing queries
+  For V = 8, E = 9    ~51 operations per source    512 operations (once)
+  Actual Runtime      ~0.005 – 0.016 ms per query   ~0.08 – 0.10 ms (once)
+  ─────────────────────────────────────────────────────────────────────────────
+
+  CONCLUSION:
+  Dijkstra's lower per-query cost makes it the better fit when the simulation
+  only ever needs to answer "what's the fastest route from A to B right now,"
+  the typical single-delivery use case. Its trade-off is that every new
+  starting intersection requires a fresh O((V+E) log V) computation, whereas
+  Floyd-Warshall pays a larger one-time O(V³) cost up front so that ANY future
+  query — regardless of source — is answered instantly. Which approach is
+  "better" therefore depends on how many routing queries the same map will
+  need to answer: one-off trips favor Dijkstra, a live dispatch system
+  fielding constant queries favors Floyd-Warshall.
+
+================================================================================
+  END OF DOCUMENTATION
+================================================================================

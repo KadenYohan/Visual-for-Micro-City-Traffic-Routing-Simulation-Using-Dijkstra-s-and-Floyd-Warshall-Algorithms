@@ -1,0 +1,314 @@
+:root {
+    --bg-color: #0f172a;
+    --panel-bg: rgba(30, 41, 59, 0.7);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent: #00e5ff;
+    --accent-hover: #00b8cc;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --node-bg: #1e293b;
+    --node-border: #38bdf8;
+    --edge-color: #4a5568;
+    --edge-text: #e2e8f0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.app-container {
+    width: 95vw;
+    height: 90vh;
+    max-width: 1400px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+header {
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #38bdf8, #00e5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+main {
+    display: flex;
+    flex: 1;
+    gap: 1.5rem;
+    overflow: hidden;
+}
+
+.glass-panel {
+    background: var(--panel-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.control-panel {
+    flex: 0 0 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    overflow-y: auto;
+}
+
+.control-panel h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: rgba(15, 23, 42, 0.8);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    cursor: pointer;
+}
+
+select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.2);
+}
+
+.primary-btn {
+    margin-top: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #00b8cc 0%, #00e5ff 100%);
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px 0 rgba(0, 229, 255, 0.39);
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
+.results-container {
+    margin-top: 1rem;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 12px;
+    padding: 1.2rem;
+    border: 1px solid var(--border-color);
+    animation: fadeIn 0.3s ease-in;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.result-item .label {
+    color: var(--text-secondary);
+}
+
+.result-item .highlight {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.path-container {
+    margin-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 0.8rem;
+}
+
+.path-sequence {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.path-node {
+    background: rgba(56, 189, 248, 0.1);
+    color: #38bdf8;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.path-arrow {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.complexity-container {
+    margin-top: auto;
+}
+
+.stats-card {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 3px solid var(--accent);
+}
+
+.stats-card h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+    font-size: 0.95rem;
+}
+
+.stats-card p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.visualization-panel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* SVG Styling */
+.node-circle {
+    fill: var(--node-bg);
+    stroke: var(--node-border);
+    stroke-width: 3;
+    transition: all 0.3s ease;
+}
+
+.node-text {
+    fill: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+}
+
+.node-group {
+    cursor: pointer;
+}
+
+.node-group:hover .node-circle {
+    stroke: var(--accent);
+    fill: rgba(0, 229, 255, 0.1);
+    filter: url(#glow);
+}
+
+.node-highlighted .node-circle {
+    stroke: var(--accent);
+    fill: rgba(0, 229, 255, 0.2);
+    stroke-width: 4;
+    filter: url(#glow);
+}
+
+.edge-line {
+    stroke: var(--edge-color);
+    stroke-width: 2;
+    transition: stroke 0.3s ease;
+}
+
+.edge-line-highlighted {
+    stroke: var(--accent);
+    stroke-width: 4;
+    filter: url(#glow);
+    /* For animation, set in JS */
+}
+
+.edge-weight-bg {
+    fill: var(--bg-color);
+    rx: 4;
+}
+
+.edge-weight-text {
+    fill: var(--accent);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    main {
+        flex-direction: column;
+    }
+    .control-panel {
+        flex: none;
+        max-height: 40vh;
+    }
+}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Makati CBD Micro-City Traffic Routing Simulation</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Micro-City Traffic Routing</h1>
+            <p>Dijkstra vs. Floyd-Warshall Algorithm Simulation</p>
+        </header>
+        
+        <main>
+            <div class="control-panel glass-panel">
+                <h2>Route Configuration</h2>
+                
+                <div class="input-group">
+                    <label for="algorithm">Algorithm</label>
+                    <select id="algorithm">
+                        <option value="dijkstra">Dijkstra's Algorithm (Greedy)</option>
+                        <option value="floyd">Floyd-Warshall (Dynamic Programming)</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="startNode">From Intersection</label>
+                    <select id="startNode">
+                        <option value="EDSA_Ayala">EDSA_Ayala</option>
+                        <option value="Ayala_Paseo">Ayala_Paseo</option>
+                        <option value="Ayala_Makati">Ayala_Makati</option>
+                        <option value="Buendia_Makati">Buendia_Makati</option>
+                        <option value="Buendia_Paseo">Buendia_Paseo</option>
+                        <option value="EDSA_Buendia">EDSA_Buendia</option>
+                        <option value="Makati_Kalayaan">Makati_Kalayaan</option>
+                        <option value="Isolated_Node">Isolated_Node (Edge Case)</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="endNode">To Intersection</label>
+                    <select id="endNode">
+                        <option value="Makati_Kalayaan">Makati_Kalayaan</option>
+                        <option value="EDSA_Ayala">EDSA_Ayala</option>
+                        <option value="Ayala_Paseo">Ayala_Paseo</option>
+                        <option value="Ayala_Makati">Ayala_Makati</option>
+                        <option value="Buendia_Makati">Buendia_Makati</option>
+                        <option value="Buendia_Paseo">Buendia_Paseo</option>
+                        <option value="EDSA_Buendia">EDSA_Buendia</option>
+                        <option value="Isolated_Node">Isolated_Node (Edge Case)</option>
+                    </select>
+                </div>
+                
+                <button id="findRouteBtn" class="primary-btn">Find Optimal Route</button>
+                
+                <div id="results" class="results-container hidden">
+                    <h3>Simulation Results</h3>
+                    <div class="result-item">
+                        <span class="label">Status:</span>
+                        <span id="resultStatus" class="value"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Travel Time:</span>
+                        <span id="resultTime" class="value highlight"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Exec. Time:</span>
+                        <span id="resultExecTime" class="value"></span>
+                    </div>
+                    <div class="path-container">
+                        <span class="label">Optimal Path:</span>
+                        <div id="resultPath" class="path-sequence"></div>
+                    </div>
+                </div>
+
+                <div id="complexityPanel" class="complexity-container">
+                    <h3>Complexity Analysis</h3>
+                    <div id="dijkstraStats" class="stats-card">
+                        <h4>Dijkstra (O((V+E) log V))</h4>
+                        <p>Best for single queries. Stops early when destination is found.</p>
+                    </div>
+                    <div id="floydStats" class="stats-card hidden">
+                        <h4>Floyd-Warshall (O(V³))</h4>
+                        <p>Best for many queries. Computes all V×V pairs in one pass.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization-panel glass-panel">
+                <svg id="cityMap" width="100%" height="100%" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+                    <!-- Definitions for markers and filters -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#4a5568" />
+                        </marker>
+                        <marker id="arrowhead-highlight" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#00e5ff" />
+                        </marker>
+                        <filter id="glow" filterUnits="userSpaceOnUse" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Edges will be rendered here -->
+                    <g id="edgesLayer"></g>
+                    
+                    <!-- Highlighted path edges will be rendered here -->
+                    <g id="pathLayer"></g>
+                    
+                    <!-- Edge weights will be rendered here -->
+                    <g id="weightsLayer"></g>
+                    
+                    <!-- Nodes will be rendered here -->
+                    <g id="nodesLayer"></g>
+                </svg>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
