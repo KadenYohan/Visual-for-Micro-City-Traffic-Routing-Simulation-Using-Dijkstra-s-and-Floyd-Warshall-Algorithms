@@ -1,0 +1,258 @@
+================================================================================
+DIJKSTRA'S ALGORITHM SAMPLE RUN OUTPUT
+================================================================================
+
+=================================================================
+   MICRO-CITY TRAFFIC ROUTING SIMULATION
+   Algorithm : Dijkstra's Algorithm (Greedy)
+   City Map  : Makati CBD, Metro Manila
+=================================================================
+
+=================================================================
+   VALID INTERSECTIONS YOU CAN USE
+=================================================================
+   1. EDSA_Ayala
+   2. Ayala_Paseo
+   3. Ayala_Makati
+   4. Buendia_Makati
+   5. Buendia_Paseo
+   6. EDSA_Buendia
+   7. Makati_Kalayaan
+   8. Isolated_Node  âš   (no roads â€” use to demo edge case)
+=================================================================
+
+   Commands:
+   â€¢ Type  'test'          â†’ run all pre-defined test cases
+   â€¢ Type  'quit'          â†’ exit the simulation
+   â€¢ Type an intersection  â†’ enter FROM / TO to find a route
+   Tip: type 'Isolated_Node' as FROM or TO to see the edge case.
+
+-----------------------------------------------------------------
+  Enter command or FROM intersection: 
+=================================================================
+   STANDARD ROUTE RESULTS  (compare with Floyd-Warshall for sanity check)
+=================================================================
+
+------------------------------------------------------------
+  TEST: Route 1 â€“ Delivery start
+  From : EDSA_Ayala
+  To   : Makati_Kalayaan
+------------------------------------------------------------
+  âœ”  Optimal Route : EDSA_Ayala  â†’  EDSA_Buendia  â†’  Buendia_Makati  â†’  Makati_Kalayaan
+  âœ”  Total Travel Time : 14 minutes
+  â�±  Execution time : 0.0240 ms  (this run re-computed from scratch)
+
+------------------------------------------------------------
+  TEST: Route 2 â€“ Cross-city trip
+  From : EDSA_Buendia
+  To   : Ayala_Makati
+------------------------------------------------------------
+  âœ”  Optimal Route : EDSA_Buendia  â†’  Buendia_Makati  â†’  Ayala_Makati
+  âœ”  Total Travel Time : 9 minutes
+  â�±  Execution time : 0.0062 ms  (this run re-computed from scratch)
+
+------------------------------------------------------------
+  TEST: Route 3 â€“ Quick hop
+  From : Ayala_Paseo
+  To   : Buendia_Makati
+------------------------------------------------------------
+  âœ”  Optimal Route : Ayala_Paseo  â†’  Ayala_Makati  â†’  Buendia_Makati
+  âœ”  Total Travel Time : 7 minutes
+  â�±  Execution time : 0.0039 ms  (this run re-computed from scratch)
+
+------------------------------------------------------------
+  TEST: Route 4 â€“ Long route
+  From : EDSA_Ayala
+  To   : Buendia_Makati
+------------------------------------------------------------
+  âœ”  Optimal Route : EDSA_Ayala  â†’  EDSA_Buendia  â†’  Buendia_Makati
+  âœ”  Total Travel Time : 11 minutes
+  â�±  Execution time : 0.0036 ms  (this run re-computed from scratch)
+
+=================================================================
+   EDGE CASE TESTS
+=================================================================
+
+------------------------------------------------------------
+  TEST: Edge Case 1 â€“ Start == End
+  From : Ayala_Paseo
+  To   : Ayala_Paseo
+------------------------------------------------------------
+  âš   Start and destination are the SAME intersection.
+  âœ”  Travel time : 0 minutes  (no movement needed)
+  âœ”  Route       : [Ayala_Paseo]
+
+------------------------------------------------------------
+  TEST: Edge Case 2 â€“ Disconnected / Isolated node
+  From : EDSA_Ayala
+  To   : Isolated_Node
+------------------------------------------------------------
+  âœ˜  No path found.
+     This intersection may be isolated (no connecting roads).
+     Dijkstra handled this gracefully â€” no crash.
+
+------------------------------------------------------------
+  TEST: Edge Case 2b â€“ Routing FROM isolated node
+  From : Isolated_Node
+  To   : Buendia_Makati
+------------------------------------------------------------
+  âœ˜  No path found.
+     This intersection may be isolated (no connecting roads).
+     Dijkstra handled this gracefully â€” no crash.
+
+=================================================================
+   COMPLEXITY ANALYSIS SUMMARY
+=================================================================
+   Nodes (V)          : 8
+   Edges (E)          : 9
+   Time  Complexity   : O((V+E) log V)
+   Space Complexity   : O(V+E)
+   Algorithm Type     : Greedy (Single-Source)
+   Compare to Floyd-Warshall: Dynamic Programming, All-Pairs, O(VÂ³)
+
+   Total execution time (4 standard runs) : 0.0377 ms
+=================================================================
+
+-----------------------------------------------------------------
+  Want to try a custom route? Enter FROM intersection (or press Enter to skip): 
+-----------------------------------------------------------------
+  Enter command or FROM intersection: 
+  Exiting simulation. Goodbye!
+
+
+
+================================================================================
+FLOYD-WARSHALL ALGORITHM SAMPLE RUN OUTPUT
+================================================================================
+
+=================================================================
+   MICRO-CITY TRAFFIC ROUTING SIMULATION
+   Algorithm : Floyd-Warshall (Dynamic Programming)
+   City Map  : Makati CBD, Metro Manila
+=================================================================
+
+â�±  Running Floyd-Warshall algorithm...
+   Execution time : 0.0718 ms
+   (Computed shortest paths between ALL 8 node pairs)
+
+=================================================================
+   VALID INTERSECTIONS YOU CAN USE
+=================================================================
+   1. EDSA_Ayala
+   2. Ayala_Paseo
+   3. Ayala_Makati
+   4. Buendia_Makati
+   5. Buendia_Paseo
+   6. EDSA_Buendia
+   7. Makati_Kalayaan
+   8. Isolated_Node  âš   (no roads â€” use to demo edge case)
+=================================================================
+
+   Commands:
+   â€¢ Type  'test'          â†’ run all pre-defined test cases
+   â€¢ Type  'quit'          â†’ exit the simulation
+   â€¢ Type an intersection  â†’ enter FROM / TO to find a route
+   Tip: type 'Isolated_Node' as FROM or TO to see the edge case.
+
+-----------------------------------------------------------------
+  Enter command or FROM intersection: 
+=================================================================
+   STANDARD ROUTE RESULTS  (compare with Dijkstra for sanity check)
+=================================================================
+
+------------------------------------------------------------
+  TEST: Route 1 â€“ Delivery start
+  From : EDSA_Ayala
+  To   : Makati_Kalayaan
+------------------------------------------------------------
+  âœ”  Optimal Route : EDSA_Ayala  â†’  Ayala_Paseo  â†’  Ayala_Makati  â†’  Buendia_Makati  â†’  Makati_Kalayaan
+  âœ”  Total Travel Time : 14 minutes
+
+------------------------------------------------------------
+  TEST: Route 2 â€“ Cross-city trip
+  From : EDSA_Buendia
+  To   : Ayala_Makati
+------------------------------------------------------------
+  âœ”  Optimal Route : EDSA_Buendia  â†’  Buendia_Makati  â†’  Ayala_Makati
+  âœ”  Total Travel Time : 9 minutes
+
+------------------------------------------------------------
+  TEST: Route 3 â€“ Quick hop
+  From : Ayala_Paseo
+  To   : Buendia_Makati
+------------------------------------------------------------
+  âœ”  Optimal Route : Ayala_Paseo  â†’  Ayala_Makati  â†’  Buendia_Makati
+  âœ”  Total Travel Time : 7 minutes
+
+------------------------------------------------------------
+  TEST: Route 4 â€“ Long route
+  From : EDSA_Ayala
+  To   : Buendia_Makati
+------------------------------------------------------------
+  âœ”  Optimal Route : EDSA_Ayala  â†’  Ayala_Paseo  â†’  Ayala_Makati  â†’  Buendia_Makati
+  âœ”  Total Travel Time : 11 minutes
+
+=================================================================
+   EDGE CASE TESTS
+=================================================================
+
+------------------------------------------------------------
+  TEST: Edge Case 1 â€“ Start == End
+  From : Ayala_Paseo
+  To   : Ayala_Paseo
+------------------------------------------------------------
+  âš   Start and destination are the SAME intersection.
+  âœ”  Travel time : 0 minutes  (no movement needed)
+  âœ”  Route       : [Ayala_Paseo]
+
+------------------------------------------------------------
+  TEST: Edge Case 2 â€“ Disconnected / Isolated node
+  From : EDSA_Ayala
+  To   : Isolated_Node
+------------------------------------------------------------
+  âœ˜  No path found.
+     This intersection may be isolated (no connecting roads).
+     Floyd-Warshall handled this gracefully â€” no crash.
+
+------------------------------------------------------------
+  TEST: Edge Case 2b â€“ Routing FROM isolated node
+  From : Isolated_Node
+  To   : Buendia_Makati
+------------------------------------------------------------
+  âœ˜  No path found.
+     This intersection may be isolated (no connecting roads).
+     Floyd-Warshall handled this gracefully â€” no crash.
+
+=================================================================
+   ALL-PAIRS SHORTEST DISTANCE TABLE  (minutes)
+   (This is what makes Floyd-Warshall unique â€” every pair,
+    computed once, reused for any future query in O(1) time)
+=================================================================
+
+                 EDSA_A  Ayal_P  Ayal_M  Buen_M  Buen_P  EDSA_B    Kal.     ISO
+-------------------------------------------------------------------------------
+EDSA_A                0       4       7      11       9       6      14       âˆž
+Ayal_P                4       0       3       7       5       9      10       âˆž
+Ayal_M                7       3       0       4       7       9       7       âˆž
+Buen_M               11       7       4       0       3       5       3       âˆž
+Buen_P                9       5       7       3       0       4       6       âˆž
+EDSA_B                6       9       9       5       4       0       8       âˆž
+Kal.                 14      10       7       3       6       8       0       âˆž
+ISO                   âˆž       âˆž       âˆž       âˆž       âˆž       âˆž       âˆž       0
+
+=================================================================
+   COMPLEXITY ANALYSIS SUMMARY
+=================================================================
+   Nodes (V)          : 8
+   Time  Complexity   : O(VÂ³)  =  O(8Â³) = 512 operations
+   Space Complexity   : O(VÂ²)  =  O(8Â²) = 64 table cells (dist + next_node)
+   Algorithm Type     : Dynamic Programming (All-Pairs)
+   Compare to Dijkstra: Greedy, Single-Source, O((V+E) log V)
+
+   Execution time     : 0.0718 ms
+=================================================================
+
+-----------------------------------------------------------------
+  Enter command or FROM intersection: 
+  Exiting simulation. Goodbye!
+
